@@ -1,5 +1,5 @@
 //import { createPrompt } from 'bun-promptx';
-import { Octokit } from '@octokit/rest';
+import { Octokit } from 'octokit';
 import { Configuration, OpenAIApi } from "openai";
 
 //const repoUrl = createPrompt("Enter GitHub repo: ");
@@ -16,13 +16,13 @@ const configuration = new Configuration({
 (async () => {
     const [owner, repo] = repoUrl.value.split('/').slice(-2)
 
-    const {data: languages} = await octokit.repos.listLanguages({
+    const {data: languages} = await octokit.rest.repos.listLanguages({
         owner,
         repo,
     });
 
     const gitIgnorePath = `.gitignore`;
-    const gitIgnore = await octokit.repos.getContent({
+    const gitIgnore = await octokit.rest.repos.getContent({
         owner,
         repo,
         path: gitIgnorePath,
