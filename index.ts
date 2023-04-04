@@ -1,6 +1,7 @@
 //import { createPrompt } from 'bun-promptx';
 import { Octokit } from 'octokit';
 import { Configuration, OpenAIApi } from "openai";
+import inquirer from 'inquirer';
 
 const imageNames = [
     "workspace-full",
@@ -23,7 +24,7 @@ const imageNames = [
 ];
 
 //const repoUrl = createPrompt("Enter GitHub repo: ");
-const repoUrl = { value: "https://github.com/prometheus-operator/prometheus-operator" };
+const repoUrl = { value: "https://github.com/gitpod-samples/template-php-laravel-mysql" };
 const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
 });
@@ -74,6 +75,7 @@ const fetchFile = async (owner: string, repo: string, path: string) => {
             \`\`\`${gitIgnore}\`\`\`
     `);
     }
+
     prompt.push(`There are some pre-built images available for you to use: ${imageNames.join(', ')}`);
 
     const packageJsonPath = `package.json`;
@@ -89,18 +91,64 @@ const fetchFile = async (owner: string, repo: string, path: string) => {
     console.info("Sending request to OpenAI...");
     console.info(prompt.join('\n'));
 
+    const messages =[
+        {
+            role: "system",
+            content: "You are GitpodYmlGpt. You generate gitpod.yml files for GitHub repos. You only respond with the two code blocks, no other text."
+        },
+        {
+            role: "user",
+            content: prompt.join('\n')
+        },
+    ]
+        ;
+
     const completion = await openai.createChatCompletion({
         model: "gpt-4",
-        messages: [
-            {
-                role: "system",
-                content: "You are GitpodYmlGpt. You generate gitpod.yml files for GitHub repos. You only respond with the two code blocks, no other text."
-            },
-            {
-                role: "user",
-                content: prompt.join('\n')
-            },
-        ],
+        //@ts-ignore
+        messages: messages
     });
-    console.log(JSON.stringify(completion.data.choices, null, 2));
+
+    const result = completion.data.choices[0];
+
+    if (!(result && result.message)) {
+        console.error("No result found");
+        return;
+    }
+
+    messages.push(result.message);
+
+    console.log("Got response. Here it is: ");
+    console.log(JSON.stringify(result, null, 2));
+
+    while (true) {
+        const prompt = await inquirer.prompt({
+            type: "input",
+            name: "message",
+            message: "Enter your message: "
+        });
+
+        messages.push({
+            role: "user",
+            content: prompt.message
+        });
+
+        const nextCompletion = await openai.createChatCompletion({
+            model: "gpt-4",
+            //@ts-ignore
+            messages: messages
+        });
+
+        const result = nextCompletion.data.choices[0];
+
+        if (!(result && result.message)) {
+            console.error("No result found");
+            return;
+        }
+
+        messages.push(result.message);
+
+        console.log("Got response. Here it is: ");
+        console.log(JSON.stringify(result, null, 2));
+    }
 })();
