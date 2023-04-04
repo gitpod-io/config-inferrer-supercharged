@@ -23,7 +23,7 @@ const imageNames = [
 ];
 
 //const repoUrl = createPrompt("Enter GitHub repo: ");
-const repoUrl = { value: "https://github.com/loujaybee/cloud-exam-notes" };
+const repoUrl = { value: "https://github.com/prometheus-operator/prometheus-operator" };
 const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
 });
@@ -34,12 +34,16 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 const fetchFile = async (owner: string, repo: string, path: string) => {
-    const { data } = await octokit.rest.repos.getContent({
-        owner,
-        repo,
-        path,
-    });
-    return Buffer.from(data.content, 'base64').toString();
+    try {
+        const { data } = await octokit.rest.repos.getContent({
+            owner,
+            repo,
+            path,
+        });
+        return Buffer.from(data.content, 'base64').toString();
+    } catch (_) {
+        return null;
+    }
 };
 
 (async () => {
