@@ -122,11 +122,19 @@ const fetchFile = async (owner: string, repo: string, path: string) => {
     console.log(JSON.stringify(result, null, 2));
 
     while (true) {
+
+        console.info("How does this look? If you want to, you can tell me what to add/change. If you are happy with it, just press enter.")
+
         const prompt = await inquirer.prompt({
             type: "input",
             name: "message",
             message: "Enter your message: "
         });
+
+        if (!prompt.message) {
+            console.log("Thanks! Bye!");
+            return;
+        }
 
         messages.push({
             role: "user",
