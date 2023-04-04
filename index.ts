@@ -33,6 +33,15 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
+const fetchFile = async (owner: string, repo: string, path: string) => {
+    const { data } = await octokit.rest.repos.getContent({
+        owner,
+        repo,
+        path,
+    });
+    return Buffer.from(data.content, 'base64').toString();
+};
+
 (async () => {
     const [owner, repo] = repoUrl.value.split('/').slice(-2)
 
@@ -42,19 +51,22 @@ const openai = new OpenAIApi(configuration);
     });
 
     const gitIgnorePath = `.gitignore`;
-    const gitIgnore = await octokit.rest.repos.getContent({
-        owner,
-        repo,
-        path: gitIgnorePath,
-    });
+    const gitIgnore = await fetchFile(owner, repo, gitIgnorePath);
 
-    const gitIgnoreContent = Buffer.from(gitIgnore.data.content, 'base64').toString();
-    const prompt = `
-        Write me a gitpod.yml with a corresponding .gitpod.Dockerfile for the following languages: ${Object.keys(languages).join(', ')}, 
-        and the following gitignore: 
-            \`\`\`gitignore${gitIgnoreContent}\`\`\`
-        There are some pre-built images available for you to use: ${imageNames.join(', ')}
-        `;
+    const prompt = [`
+        Write me a gitpod.yml with a corresponding .gitpod.Dockerfile for the following repo: `];
+
+    if (languages.length > 0) {
+        prompt.push(`Languages: ${Object.keys(languages).join(', ')}`);
+    }
+
+    if (gitIgnore) {
+        prompt.push(`
+        Gitignore file: 
+            \`\`\`${gitIgnore}\`\`\`
+    `);
+    }
+    prompt.push(`There are some pre-built images available for you to use: ${imageNames.join(', ')}`);
 
     const completion = await openai.createChatCompletion({
         model: "gpt-4",
@@ -65,7 +77,7 @@ const openai = new OpenAIApi(configuration);
             },
             {
                 role: "user",
-                content: prompt,
+                content: prompt.join('\n')
             },
         ],
     });
