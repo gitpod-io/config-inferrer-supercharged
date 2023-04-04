@@ -57,8 +57,8 @@ const fetchFile = async (owner: string, repo: string, path: string) => {
 
     console.info("Got gitignore...");
 
-    const prompt = [`
-        Write me a gitpod.yml with a corresponding .gitpod.Dockerfile for the following repo: `];
+    const prompt: string[] = [];
+    prompt.push(`Write the gitpod.yml with a corresponding .gitpod.Dockerfile for the following repo: ${repoUrl.value}`);
 
     if (languages.length > 0) {
         prompt.push(`Languages: ${Object.keys(languages).join(', ')}`);
@@ -90,7 +90,7 @@ const fetchFile = async (owner: string, repo: string, path: string) => {
         messages: [
             {
                 role: "system",
-                content: "You are Nicolas Cage. You reply like he would. You always start your message with 'Hi, I'm Nicolas Cage'."
+                content: "You are GitpodYmlGpt. You generate gitpod.yml files for GitHub repos. You only respond with the two code blocks, no other text."
             },
             {
                 role: "user",
