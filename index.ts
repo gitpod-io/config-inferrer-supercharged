@@ -2,21 +2,41 @@
 import { Octokit } from 'octokit';
 import { Configuration, OpenAIApi } from "openai";
 
+const imageNames = [
+    "workspace-full",
+    "workspace-mongodb",
+    "workspace-base",
+    "workspace-dotnet",
+    "workspace-full-vnc",
+    "workspace-mysql",
+    "workspace-postgres",
+    "workspace-c",
+    "workspace-clojure",
+    "workspace-go",
+    "workspace-java-11",
+    "workspace-java-17",
+    "workspace-node",
+    "workspace-node-lts",
+    "workspace-python",
+    "workspace-rust",
+    "workspace-elixir",
+];
+
 //const repoUrl = createPrompt("Enter GitHub repo: ");
-const repoUrl = {value: "https://github.com/gitpod-samples/template-php-laravel-mysql"};
+const repoUrl = { value: "https://github.com/loujaybee/cloud-exam-notes" };
 const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
 });
 
 const configuration = new Configuration({
     apiKey: process.env.OPENAI_API_KEY,
-  });
-  const openai = new OpenAIApi(configuration);
+});
+const openai = new OpenAIApi(configuration);
 
 (async () => {
     const [owner, repo] = repoUrl.value.split('/').slice(-2)
 
-    const {data: languages} = await octokit.rest.repos.listLanguages({
+    const { data: languages } = await octokit.rest.repos.listLanguages({
         owner,
         repo,
     });
@@ -29,7 +49,12 @@ const configuration = new Configuration({
     });
 
     const gitIgnoreContent = Buffer.from(gitIgnore.data.content, 'base64').toString();
-    const prompt = `Write me a gitpod.yml with a corresponding .gitpod.Dockerfile for the following languages: ${Object.keys(languages).join(', ')}, and the following gitignore: \`\`\`gitignore${gitIgnoreContent}\`\`\``;
+    const prompt = `
+        Write me a gitpod.yml with a corresponding .gitpod.Dockerfile for the following languages: ${Object.keys(languages).join(', ')}, 
+        and the following gitignore: 
+            \`\`\`gitignore${gitIgnoreContent}\`\`\`
+        There are some pre-built images available for you to use: ${imageNames.join(', ')}
+        `;
 
     const completion = await openai.createChatCompletion({
         model: "gpt-4",
